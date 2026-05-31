@@ -1,0 +1,28 @@
+appId: com.speakflow.desktop
+productName: SpeakFlow
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - out/**/*
+  - node_modules/**/*
+  - package.json
+
+win:
+  executableName: speakflow
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+
+publish: null
