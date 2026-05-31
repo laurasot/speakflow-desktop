@@ -41,11 +41,6 @@ flowchart TB
     Worklet -->|"ArrayBuffer"| Bridge
     Bridge -->|"IPC"| Buffer
     WS -->|"2 frames:<br/>1. JSON metadata<br/>2. Binary PCM"| Backend
-    
-    style Renderer fill:#1e3a5f
-    style Main fill:#1e2a3f
-    style Preload fill:#2d1e3f
-    style Backend fill:#1e3f2d
 ```
 
 Every 500ms, **2 WebSocket frames** are sent:
