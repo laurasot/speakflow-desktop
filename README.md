@@ -1,73 +1,215 @@
 # SpeakFlow Desktop
 
-Real-time dual audio capture for meetings. Captures microphone and system audio (Teams, Meet, Zoom, etc.) separately and streams them to a backend via WebSocket.
+Desktop application that captures **two audio sources in real-time** (user's microphone + system audio) and streams them separately to a backend for transcription in virtual meetings.
+
+![SpeakFlow UI](assets/screenshot.png)
+
+## Features
+
+* **Dual audio capture** — user's microphone + remote meeting audio (Teams, Meet, Zoom)
+* **Low-latency streaming** — 500ms chunks with binary PCM audio (not base64)
+* **Automatic reconnection** — 60s buffer with exponential backoff on backend failures
+* **Real-time UI** — VU meters per source + live transcripts from backend
+* **Secure architecture** — Electron sandbox, `contextIsolation`, no `nodeIntegration`
 
 ## Architecture
 
 ```
-Renderer (React)          Preload (contextBridge)     Main (Node/Electron)
-────────────────          ──────────────────────      ───────────────────
-getUserMedia ──►          
-getDisplayMedia ──►       
-AudioWorklet (PCM16) ──►  window.speakflow.pushChunk ──► ipcMain → WS client → Backend
+┌─────────────────────────────────────────────────────┐
+│  Renderer (React)                                   │
+│  ┌──────────────────┐   ┌──────────────────┐       │
+│  │ getUserMedia     │   │ getDisplayMedia  │       │
+│  │ (microphone)     │   │ (WASAPI loopback)│       │
+│  └────────┬─────────┘   └────────┬─────────┘       │
+│           │                      │                  │
+│           └──────┬───────────────┘                  │
+│                  ↓                                   │
+│          AudioWorklet (PCM 16-bit mono 16kHz)       │
+│                  ↓                                   │
+│           IPC (ArrayBuffer)                         │
+└──────────────────┼─────────────────────────────────┘
+                   ↓
+┌─────────────────────────────────────────────────────┐
+│  Main Process (Node.js)                             │
+│  ┌──────────────────────────────────────┐           │
+│  │ Ring Buffer (120 chunks ≈ 60s audio) │           │
+│  └────────────────┬─────────────────────┘           │
+│                   ↓                                  │
+│       WebSocket Client + Heartbeat                  │
+│                   ↓                                  │
+└───────────────────┼─────────────────────────────────┘
+                    ↓
+            Backend WebSocket
+        (JSON metadata + binary PCM)
 ```
 
-## Audio format
+Every 500ms, **2 WebSocket frames** are sent:
+1. JSON with metadata (`session_id`, `source`, `timestamp`, `size`)
+2. Binary with PCM (~16 KB)
 
-| Property    | Value       |
-|-------------|-------------|
-| Encoding    | PCM 16-bit LE |
-| Sample rate | 16 000 Hz   |
-| Channels    | Mono        |
-| Chunk size  | 500 ms = 8 000 samples = 16 KB |
+[**→ See full technical protocol**](./PROTOCOL.md)
 
-## WebSocket Protocol
+## Tech Stack
 
-SpeakFlow sends **binary audio** (not base64) for efficiency:
+**Desktop App:**
+* Electron 31
+* React 18 + TypeScript
+* Vite (dev server + HMR)
+* Zustand (state management)
+* WASAPI Loopback (system capture on Windows)
 
-1. **JSON metadata** (text frame) → describes the chunk
-2. **PCM binary** (binary frame) → raw audio data
+**Tooling:**
+* pnpm (package manager)
+* electron-vite (build)
+* electron-builder (packaging)
+* ESLint + TypeScript strict
 
-Full protocol specification: [`PROTOCOL.md`](./PROTOCOL.md)
+## Getting Started
 
-### Quick example
+### Prerequisites
 
-```json
-// Frame 1: metadata
-{
-  "type": "audio_chunk",
-  "session_id": "uuid",
-  "source": "microphone",
-  "timestamp": 1717000000123,
-  "size": 16000
-}
+* **Node.js** 20+
+* **pnpm** 9+
+* **Windows 10/11** (for now; macOS/Linux on roadmap)
 
-// Frame 2: binary PCM (16 KB)
-<Buffer: PCM 16-bit LE, mono, 16 kHz>
-```
-
-Compatible with Deepgram, AssemblyAI, AWS Transcribe (no base64 decode needed).
-
-## Known limitations
-
-- System audio capture uses Chromium's WASAPI loopback — captures the **full system mix**, not per-process audio. This is by design and sufficient for meeting transcription.
-- If the audio driver is in exclusive mode, `getDisplayMedia` may throw `OverconstrainedError`. Check that no other app has exclusive audio control.
-
-## Setup
+### Installation
 
 ```bash
+git clone https://github.com/your-org/speakflow-desktop.git
+cd speakflow-desktop
 pnpm install
+```
+
+### Run
+
+```bash
 pnpm run dev
 ```
 
-On first launch, open **Settings** and configure:
-- **User ID** — identifies you in the backend
-- **Backend URL** — WebSocket endpoint, e.g. `wss://your-backend.example.com/ws/audio`
+The Electron window will open with DevTools.
 
-## Build
+### Configure
+
+1. Click **⚙ Settings**
+2. Enter:
+   - **User ID:** your identifier
+   - **Backend WebSocket URL:** `ws://localhost:8000/ws/audio` (or your backend)
+3. **Save**
+
+### Start Capturing
+
+1. Select microphone (or leave "System default")
+2. **▶ Start Capture**
+3. Accept Windows permissions
+4. You'll see:
+   - 🟢 **Connected** (if backend is running)
+   - VU meters **MIC** / **SYS**
+   - Real-time transcripts (if backend sends them)
+
+## Project Structure
+
+```
+speakflow-desktop/
+├── src/
+│   ├── main/              # Electron main process (Node.js)
+│   │   ├── audio/         # WASAPI capture + permissions
+│   │   ├── websocket/     # WS client + reconnection + buffer
+│   │   ├── auth/          # CredentialsProvider (static/JWT)
+│   │   ├── config/        # settings.json in userData
+│   │   ├── ipc/           # IPC handlers
+│   │   └── logging/       # structured electron-log
+│   ├── preload/           # contextBridge (secure API)
+│   ├── renderer/          # React UI
+│   │   ├── audio/         # getUserMedia + AudioWorklet
+│   │   ├── components/    # UI controls + VU + transcripts
+│   │   └── store/         # Zustand store
+│   └── shared/            # Shared types + constants
+├── PROTOCOL.md            # WebSocket technical spec
+└── electron-builder.yml   # Windows packaging config
+```
+
+## Build & Package
+
+### Development Build
+
+```bash
+pnpm run build
+```
+
+Generates `out/` with compiled bundles.
+
+### Production Installer
 
 ```bash
 pnpm run package
 ```
 
-Produces a Windows installer in `dist/`.
+Generates installer in `dist/` (`.exe` for Windows).
+
+## Roadmap
+
+- [x] Microphone + system capture (WASAPI loopback)
+- [x] Binary WebSocket protocol
+- [x] Ring buffer + automatic reconnection
+- [x] UI with VU meters + transcripts
+- [x] Persistent settings
+- [ ] JWT login (seam prepared, pending implementation)
+- [ ] Floating overlay over meeting
+- [ ] macOS support (CoreAudio)
+- [ ] Linux support (PulseAudio)
+- [ ] Auto-update
+- [ ] Global hotkeys (mute, stop)
+- [ ] ASR language selection
+
+## Lessons Learned
+
+### Technical Challenges
+
+**1. System audio capture without custom drivers**
+
+Using `desktopCapturer` with `audio: 'loopback'` from Electron allows capturing WASAPI loopback on Windows without installing virtual drivers (VB-Audio Cable, etc.). Limitation: captures **full system mix**, not per-process.
+
+**2. Resampling to 16 kHz without custom DSP**
+
+`new AudioContext({ sampleRate: 16000 })` delegates resampling to Chromium's libwebrtc. Quality sufficient for ASR with zero overhead of maintaining custom polyphase decimators.
+
+**3. Audio IPC without memory inflation**
+
+Sending `ArrayBuffer` over IPC (instead of base64 in JSON) reduces overhead. The `ArrayBuffer` is transferred via structured clone, not serialization.
+
+**4. Reconnection without losing audio**
+
+Bounded ring buffer (60s) + exponential backoff. On reconnect, drains queue in order. Drop-oldest if overflow (rare with 500ms chunks).
+
+**5. Electron sandbox without breaking capture**
+
+Capture **must run in renderer** (Web APIs: `getUserMedia`, `AudioWorklet`). Main only handles WebSocket + IPC. Preload exposes minimal API with `contextBridge`.
+
+### Design Decisions
+
+- **Binary vs base64:** saves ~25% bandwidth and is directly compatible with Deepgram/AssemblyAI.
+- **500ms chunks:** balance between latency (low) and network overhead (acceptable).
+- **Two separate sources:** enables diarization (user vs. remote) in backend without client-side VAD.
+- **pnpm:** faster resolution than npm, but requires `--skipDepsCheck` due to electron build scripts issue.
+
+## Contributing
+
+```bash
+# Fork + clone
+git checkout -b feature/my-feature
+# ... changes ...
+pnpm run lint
+pnpm run build
+git commit -m "feat: description"
+# Push + PR
+```
+
+## License
+
+MIT
+
+---
+
+**Technical docs:**
+- [WebSocket Protocol](./PROTOCOL.md) — JSON + binary schema, backend examples
+- [Project rules](./.cursor/rules/project-rules.mdc) — Electron architecture, security
