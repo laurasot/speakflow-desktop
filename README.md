@@ -52,7 +52,7 @@ Every 500ms, **2 WebSocket frames** are sent:
 1. JSON with metadata (`session_id`, `source`, `timestamp`, `size`)
 2. Binary with PCM (~16 KB)
 
-[**→ See full technical protocol**](./PROTOCOL.md)
+[**→ See full technical protocol**](docs/PROTOCOL.md)
 
 ## Tech Stack
 
@@ -202,4 +202,4 @@ Made with 🎵 and 🦜 (Chatot approves this audio capture)
 ---
 
 **Technical docs:**
-- [WebSocket Protocol](./PROTOCOL.md) — JSON + binary schema, backend examples
+- [WebSocket Protocol](docs/PROTOCOL.md) — JSON + binary schema, backend examples
