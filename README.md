@@ -151,21 +151,6 @@ pnpm run package
 
 Generates installer in `dist/` (`.exe` for Windows).
 
-## Roadmap
-
-- [x] Microphone + system capture (WASAPI loopback)
-- [x] Binary WebSocket protocol
-- [x] Ring buffer + automatic reconnection
-- [x] UI with VU meters + transcripts
-- [x] Persistent settings
-- [ ] JWT login (seam prepared, pending implementation)
-- [ ] Floating overlay over meeting
-- [ ] macOS support (CoreAudio)
-- [ ] Linux support (PulseAudio)
-- [ ] Auto-update
-- [ ] Global hotkeys (mute, stop)
-- [ ] ASR language selection
-
 ## Lessons Learned
 
 ### Technical Challenges
