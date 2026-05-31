@@ -196,10 +196,10 @@ git commit -m "feat: description"
 
 ## License
 
-MIT
+Made with 🎵 and 🦜 (Chatot approves this audio capture)
+![Chatot](assets/chatot_easter_egg.png)
 
 ---
 
 **Technical docs:**
 - [WebSocket Protocol](./PROTOCOL.md) — JSON + binary schema, backend examples
-- [Project rules](./.cursor/rules/project-rules.mdc) — Electron architecture, security
