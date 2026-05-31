@@ -14,33 +14,38 @@ Desktop application that captures **two audio sources in real-time** (user's mic
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────┐
-│  Renderer (React)                                   │
-│  ┌──────────────────┐   ┌──────────────────┐       │
-│  │ getUserMedia     │   │ getDisplayMedia  │       │
-│  │ (microphone)     │   │ (WASAPI loopback)│       │
-│  └────────┬─────────┘   └────────┬─────────┘       │
-│           │                      │                  │
-│           └──────┬───────────────┘                  │
-│                  ↓                                   │
-│          AudioWorklet (PCM 16-bit mono 16kHz)       │
-│                  ↓                                   │
-│           IPC (ArrayBuffer)                         │
-└──────────────────┼─────────────────────────────────┘
-                   ↓
-┌─────────────────────────────────────────────────────┐
-│  Main Process (Node.js)                             │
-│  ┌──────────────────────────────────────┐           │
-│  │ Ring Buffer (120 chunks ≈ 60s audio) │           │
-│  └────────────────┬─────────────────────┘           │
-│                   ↓                                  │
-│       WebSocket Client + Heartbeat                  │
-│                   ↓                                  │
-└───────────────────┼─────────────────────────────────┘
-                    ↓
-            Backend WebSocket
-        (JSON metadata + binary PCM)
+```mermaid
+flowchart TB
+    subgraph Renderer["Renderer Process (React)"]
+        Mic["getUserMedia<br/>(microphone)"]
+        Sys["getDisplayMedia<br/>(WASAPI loopback)"]
+        Worklet["AudioWorklet<br/>PCM 16-bit mono 16kHz<br/>500ms chunks"]
+        
+        Mic --> Worklet
+        Sys --> Worklet
+    end
+    
+    subgraph Preload["Preload (contextBridge)"]
+        Bridge["IPC Bridge<br/>ArrayBuffer"]
+    end
+    
+    subgraph Main["Main Process (Node.js)"]
+        Buffer["Ring Buffer<br/>120 chunks ≈ 60s"]
+        WS["WebSocket Client<br/>+ Heartbeat"]
+        
+        Buffer --> WS
+    end
+    
+    Backend["Backend WebSocket<br/>(JSON metadata + binary PCM)"]
+    
+    Worklet -->|"ArrayBuffer"| Bridge
+    Bridge -->|"IPC"| Buffer
+    WS -->|"2 frames:<br/>1. JSON metadata<br/>2. Binary PCM"| Backend
+    
+    style Renderer fill:#1e3a5f
+    style Main fill:#1e2a3f
+    style Preload fill:#2d1e3f
+    style Backend fill:#1e3f2d
 ```
 
 Every 500ms, **2 WebSocket frames** are sent:
