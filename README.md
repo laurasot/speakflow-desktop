@@ -191,6 +191,12 @@ git commit -m "feat: description"
 
 ## License
 
+Copyright (c) 2026 Laura Sot
+
+Licensed under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/). See [LICENSE](./LICENSE) for the full text.
+
+Noncommercial use only. Commercial use requires separate permission from the licensor.
+
 Made with 🎵 and 🦜 (Chatot approves this audio capture)
 ![Chatot](assets/chatot_easter_egg.png)
 

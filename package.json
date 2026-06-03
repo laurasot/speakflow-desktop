@@ -2,6 +2,7 @@
   "name": "speakflow-desktop",
   "version": "0.1.0",
   "description": "Real-time dual audio capture and streaming for meetings",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
