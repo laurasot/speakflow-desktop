@@ -54,12 +54,14 @@ function getWorkletUrl(): string {
 
 export interface PcmWorkletHandle {
   node: AudioWorkletNode
+  analyser: AnalyserNode
   disconnect: () => void
 }
 
 /**
  * Creates an AudioContext at 16 kHz, loads the PCM framer worklet,
  * and connects the given source stream.
+ * Also inserts an AnalyserNode for real-time waveform visualization.
  *
  * @param stream  MediaStream with audio tracks
  * @param onFrame Called for each PCM frame: (pcm: ArrayBuffer, capturedAtMs: number)
@@ -78,6 +80,11 @@ export async function createPcmCapture(
 
   const source = ctx.createMediaStreamSource(stream)
 
+  // AnalyserNode for waveform visualization (does not affect PCM pipeline)
+  const analyser = ctx.createAnalyser()
+  analyser.fftSize = 512
+  analyser.smoothingTimeConstant = 0.6
+
   const node = new AudioWorkletNode(ctx, 'pcm-framer', {
     processorOptions: { frameSize: FRAME_SIZE },
     numberOfInputs: 1,
@@ -95,12 +102,16 @@ export async function createPcmCapture(
     onFrame(ev.data.pcm, capturedAtMs)
   }
 
+  // source → analyser (for visualization) and source → worklet (for PCM)
+  source.connect(analyser)
   source.connect(node)
 
   const handle: PcmWorkletHandle = {
     node,
+    analyser,
     disconnect: () => {
       source.disconnect()
+      analyser.disconnect()
       node.disconnect()
       node.port.close()
       ctx.close()

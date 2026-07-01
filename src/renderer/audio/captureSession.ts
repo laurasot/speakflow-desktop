@@ -34,6 +34,11 @@ export class CaptureSession {
     this.sessionId = crypto.randomUUID()
   }
 
+  /** Returns the mic AnalyserNode for real-time waveform visualization */
+  getMicAnalyser(): AnalyserNode | null {
+    return this.micHandle?.analyser ?? null
+  }
+
   async start(): Promise<void> {
     if (this.running) return
     this.running = true

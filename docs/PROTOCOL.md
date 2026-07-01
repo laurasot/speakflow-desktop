@@ -148,7 +148,31 @@ El backend puede enviar mensajes JSON en cualquier momento:
 | `is_final`   | boolean | `true` si es transcripción final; `false` si es parcial |
 | `timestamp`  | number? | Opcional: ms epoch cuando se generó la transcripción |
 
-### 3. `session_ended` (confirmación de cierre)
+### 3. `suggestion` (sugerencia contextual de respuesta)
+
+```json
+{
+  "type": "suggestion",
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "source": "system",
+  "based_on": "Could you walk me through your experience with distributed systems?",
+  "trigger_reason": "repeated_question",
+  "suggestion": "Sure, I've worked with Kafka and Redis for about 3 years...",
+  "timestamp": 1717000001234
+}
+```
+
+| Campo            | Tipo   | Descripción |
+|------------------|--------|-------------|
+| `type`           | string | `"suggestion"` |
+| `session_id`     | string | UUID de la sesión |
+| `source`         | string | Fuente que disparó la sugerencia (`"microphone"` o `"system"`) |
+| `based_on`       | string | Fragmento de transcripción que originó la sugerencia |
+| `trigger_reason` | string | Motivo del trigger (ej. `"repeated_question"`) |
+| `suggestion`     | string | Texto sugerido para responder |
+| `timestamp`      | number | ms epoch cuando se generó la sugerencia |
+
+### 4. `session_ended` (confirmación de cierre)
 
 ```json
 {
@@ -157,7 +181,7 @@ El backend puede enviar mensajes JSON en cualquier momento:
 }
 ```
 
-### 4. `error` (errores)
+### 5. `error` (errores)
 
 ```json
 {

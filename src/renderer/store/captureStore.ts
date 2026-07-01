@@ -1,5 +1,12 @@
 import { create } from 'zustand'
-import type { ConnectionStatus, Settings, StatusUpdate, ServerMessage, TranscriptMessage } from '@shared/types'
+import type {
+  ConnectionStatus,
+  Settings,
+  StatusUpdate,
+  ServerMessage,
+  TranscriptMessage,
+  SuggestionMessage,
+} from '@shared/types'
 
 interface CaptureState {
   // Capture state
@@ -23,8 +30,12 @@ interface CaptureState {
   // Settings
   settings: Settings | null
 
-  // Transcripts
-  transcripts: TranscriptMessage[]
+  // Transcripts (consolidated)
+  currentTranscripts: Map<string, TranscriptMessage> // key: `${session_id}-${source}`
+  finalTranscripts: TranscriptMessage[]
+
+  // AI suggestions (latest last)
+  suggestions: SuggestionMessage[]
 
   // Actions
   setCapturing: (capturing: boolean, sessionId?: string) => void
@@ -37,6 +48,7 @@ interface CaptureState {
   setSettings: (settings: Settings) => void
   handleServerMessage: (msg: ServerMessage) => void
   clearTranscripts: () => void
+  clearSuggestions: () => void
 }
 
 export const useCaptureStore = create<CaptureState>((set) => ({
@@ -56,7 +68,9 @@ export const useCaptureStore = create<CaptureState>((set) => ({
 
   settings: null,
 
-  transcripts: [],
+  currentTranscripts: new Map(),
+  finalTranscripts: [],
+  suggestions: [],
 
   setCapturing: (capturing, sessionId) =>
     set({ isCapturing: capturing, sessionId: sessionId ?? null, error: null }),
@@ -81,13 +95,42 @@ export const useCaptureStore = create<CaptureState>((set) => ({
 
   handleServerMessage: (msg) => {
     if (msg.type === 'transcript') {
-      set((state) => ({
-        transcripts: [...state.transcripts.slice(-49), msg], // keep last 50
-      }))
+      set((state) => {
+        const key = `${msg.session_id}-${msg.source}`
+        const newCurrent = new Map(state.currentTranscripts)
+        const newFinal = [...state.finalTranscripts]
+
+        if (msg.is_final) {
+          // Move to final transcripts, remove from current
+          newFinal.push(msg)
+          newCurrent.delete(key)
+          
+          // Keep only last 10 final transcripts
+          if (newFinal.length > 10) {
+            newFinal.shift()
+          }
+        } else {
+          // Update current partial
+          newCurrent.set(key, msg)
+        }
+
+        return {
+          currentTranscripts: newCurrent,
+          finalTranscripts: newFinal,
+        }
+      })
+    } else if (msg.type === 'suggestion') {
+      set((state) => {
+        const next = [...state.suggestions, msg]
+        if (next.length > 5) next.shift()
+        return { suggestions: next }
+      })
     } else if (msg.type === 'error') {
       set({ error: `Server error: ${msg.message}` })
     }
   },
 
-  clearTranscripts: () => set({ transcripts: [] }),
+  clearTranscripts: () => set({ currentTranscripts: new Map(), finalTranscripts: [] }),
+
+  clearSuggestions: () => set({ suggestions: [] }),
 }))

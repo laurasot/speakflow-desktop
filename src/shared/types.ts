@@ -65,6 +65,18 @@ export interface SessionEndedMessage {
   session_id: string
 }
 
+export type SuggestionTriggerReason = 'repeated_question' | string
+
+export interface SuggestionMessage {
+  type: 'suggestion'
+  session_id: string
+  source: AudioSource
+  based_on: string
+  trigger_reason: SuggestionTriggerReason
+  suggestion: string
+  timestamp: number
+}
+
 export interface ErrorMessage {
   type: 'error'
   code: string
@@ -75,6 +87,7 @@ export interface ErrorMessage {
 export type ServerMessage =
   | SessionStartedMessage
   | TranscriptMessage
+  | SuggestionMessage
   | SessionEndedMessage
   | ErrorMessage
 

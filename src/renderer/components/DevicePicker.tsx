@@ -19,17 +19,16 @@ export function DevicePicker({ disabled }: Props) {
 
   return (
     <label style={styles.label}>
-      <span style={styles.labelText}>Microphone</span>
       <select
         style={{ ...styles.select, opacity: disabled ? 0.5 : 1 }}
         value={selectedMicId ?? ''}
         onChange={(e) => selectMic(e.target.value || undefined)}
         disabled={disabled}
       >
-        <option value="">System default</option>
+        <option value="">🎤 System default</option>
         {devices.map((d) => (
           <option key={d.deviceId} value={d.deviceId}>
-            {d.label || `Device ${d.deviceId.slice(0, 8)}`}
+            🎤 {d.label || `Device ${d.deviceId.slice(0, 8)}`}
           </option>
         ))}
       </select>
@@ -41,28 +40,21 @@ const styles: Record<string, React.CSSProperties> = {
   label: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '6px',
-  },
-  labelText: {
-    fontSize: '12px',
-    fontWeight: 500,
-    color: '#94a3b8',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
   },
   select: {
-    background: '#1e2433',
+    background: '#1e293b',
     border: '1px solid #334155',
     borderRadius: '6px',
-    padding: '8px 10px',
-    color: '#f1f5f9',
-    fontSize: '13px',
+    padding: '6px 8px',
+    color: '#e2e8f0',
+    fontSize: '11px',
     cursor: 'pointer',
     outline: 'none',
   },
   empty: {
-    fontSize: '13px',
+    fontSize: '11px',
     color: '#64748b',
     fontStyle: 'italic',
+    padding: '6px 8px',
   },
 }

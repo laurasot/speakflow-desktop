@@ -19,7 +19,6 @@ function VuMeter({ level, label }: { level: number; label: string }) {
           }}
         />
       </div>
-      <span style={styles.vuPct}>{pct}%</span>
     </div>
   )
 }
@@ -54,18 +53,18 @@ export function StatusPanel() {
           style={{
             ...styles.dot,
             background: statusColor[wsStatus],
-            boxShadow: wsStatus === 'connected' ? `0 0 6px ${statusColor[wsStatus]}` : 'none',
+            boxShadow: wsStatus === 'connected' ? `0 0 4px ${statusColor[wsStatus]}` : 'none',
           }}
         />
         <span style={{ ...styles.statusText, color: statusColor[wsStatus] }}>
           {statusLabel[wsStatus]}
         </span>
         {queueLength > 0 && (
-          <span style={styles.badge}>{queueLength} queued</span>
+          <span style={styles.badge}>{queueLength}</span>
         )}
         {droppedChunks > 0 && (
           <span style={{ ...styles.badge, background: '#7f1d1d', color: '#fca5a5' }}>
-            {droppedChunks} dropped
+            {droppedChunks}↓
           </span>
         )}
       </div>
@@ -85,67 +84,62 @@ const styles: Record<string, React.CSSProperties> = {
   panel: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px',
+    gap: '8px',
   },
   statusRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '6px',
     flexWrap: 'wrap',
   },
   dot: {
-    width: '8px',
-    height: '8px',
+    width: '7px',
+    height: '7px',
     borderRadius: '50%',
     flexShrink: 0,
   },
   statusText: {
-    fontSize: '13px',
+    fontSize: '12px',
     fontWeight: 500,
   },
   badge: {
-    fontSize: '11px',
-    padding: '2px 7px',
-    borderRadius: '999px',
+    fontSize: '10px',
+    padding: '2px 5px',
+    borderRadius: '4px',
     background: '#1e3a5f',
     color: '#93c5fd',
-    fontWeight: 500,
+    fontWeight: 600,
+    fontFamily: 'monospace',
   },
   vuContainer: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px',
+    gap: '6px',
   },
   vu: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '6px',
   },
   vuLabel: {
-    fontSize: '10px',
+    fontSize: '9px',
     fontWeight: 700,
     color: '#64748b',
-    width: '28px',
+    width: '24px',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
     flexShrink: 0,
   },
   vuTrack: {
     flex: 1,
-    height: '6px',
-    background: '#1e2433',
-    borderRadius: '3px',
+    height: '5px',
+    background: '#0f1521',
+    borderRadius: '2px',
     overflow: 'hidden',
+    border: '1px solid #1e293b',
   },
   vuFill: {
     height: '100%',
-    borderRadius: '3px',
-  },
-  vuPct: {
-    fontSize: '10px',
-    color: '#475569',
-    width: '30px',
-    textAlign: 'right',
-    flexShrink: 0,
+    borderRadius: '2px',
   },
 }

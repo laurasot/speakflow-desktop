@@ -1,108 +1,170 @@
+import { useRef, useEffect } from 'react'
 import { useCaptureStore } from '../store/captureStore'
 
 export function TranscriptPanel() {
-  const transcripts = useCaptureStore((s) => s.transcripts)
+  const currentTranscripts = useCaptureStore((s) => s.currentTranscripts)
+  const finalTranscripts = useCaptureStore((s) => s.finalTranscripts)
+  const clearTranscripts = useCaptureStore((s) => s.clearTranscripts)
   const isCapturing = useCaptureStore((s) => s.isCapturing)
+  const bottomRef = useRef<HTMLDivElement>(null)
 
-  if (!isCapturing && transcripts.length === 0) {
-    return null
-  }
+  const currentArray = Array.from(currentTranscripts.values())
+  const hasAny = finalTranscripts.length > 0 || currentArray.length > 0
+
+  // Auto-scroll to bottom on new transcripts
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [finalTranscripts.length, currentArray.length])
 
   return (
     <div style={styles.panel}>
-      <h3 style={styles.title}>Transcripts</h3>
-      <div style={styles.list}>
-        {transcripts.length === 0 ? (
-          <p style={styles.empty}>Waiting for transcription...</p>
-        ) : (
-          transcripts.map((t, idx) => (
-            <div key={idx} style={styles.item}>
-              <div style={styles.header}>
-                <span
-                  style={{
-                    ...styles.badge,
-                    background: t.source === 'microphone' ? '#1e3a5f' : '#1e2a3f',
-                    color: t.source === 'microphone' ? '#93c5fd' : '#a5b4fc',
-                  }}
-                >
-                  {t.source === 'microphone' ? 'MIC' : 'SYS'}
-                </span>
-                {t.is_final && <span style={styles.finalBadge}>FINAL</span>}
-              </div>
-              <p style={styles.text}>{t.text}</p>
-            </div>
-          ))
+      {/* Header */}
+      <div style={styles.header}>
+        <span style={styles.title}>Live transcription</span>
+        {hasAny && (
+          <button style={styles.clearBtn} onClick={clearTranscripts}>
+            Clear
+          </button>
         )}
       </div>
+
+      {/* Transcript list */}
+      <div style={styles.list}>
+        {!hasAny && isCapturing && (
+          <p style={styles.placeholder}>Listening…</p>
+        )}
+        {!hasAny && !isCapturing && (
+          <p style={styles.placeholder}>Start capturing to see live transcription</p>
+        )}
+
+        {/* Final transcripts */}
+        {finalTranscripts.map((t, idx) => {
+          const isLast = idx === finalTranscripts.length - 1 && currentArray.length === 0
+          return (
+            <TranscriptRow key={`final-${idx}`} text={t.text} timestamp={t.timestamp} highlight={isLast} />
+          )
+        })}
+
+        {/* Current partials */}
+        {currentArray.map((t) => (
+          <TranscriptRow
+            key={`${t.session_id}-${t.source}`}
+            text={t.text}
+            timestamp={t.timestamp}
+            partial
+          />
+        ))}
+
+        <div ref={bottomRef} />
+      </div>
+    </div>
+  )
+}
+
+function TranscriptRow({
+  text,
+  timestamp,
+  partial,
+  highlight,
+}: {
+  text: string
+  timestamp?: number
+  partial?: boolean
+  highlight?: boolean
+}) {
+  const time = timestamp
+    ? new Date(timestamp).toLocaleTimeString('en-US', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      })
+    : ''
+
+  return (
+    <div style={{ ...styles.row, opacity: partial ? 0.55 : 1 }}>
+      <span style={styles.ts}>{time}</span>
+      <span
+        style={{
+          ...styles.text,
+          ...(highlight ? styles.textHighlight : {}),
+          ...(partial ? styles.textPartial : {}),
+        }}
+      >
+        {text}
+      </span>
     </div>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
   panel: {
+    flex: 1,
+    minHeight: 0,
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px',
-    padding: '16px',
-    background: '#0a0d12',
-    borderRadius: '8px',
-    border: '1px solid #1e293b',
-  },
-  title: {
-    margin: 0,
-    fontSize: '13px',
-    fontWeight: 600,
-    color: '#94a3b8',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-  },
-  list: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    maxHeight: '300px',
-    overflowY: 'auto',
-  },
-  empty: {
-    margin: 0,
-    fontSize: '13px',
-    color: '#64748b',
-    fontStyle: 'italic',
-  },
-  item: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px',
-    padding: '8px 10px',
-    background: '#141922',
-    borderRadius: '6px',
-    border: '1px solid #1e2937',
+    overflow: 'hidden',
   },
   header: {
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
+    justifyContent: 'space-between',
+    padding: '8px 12px',
+    flexShrink: 0,
   },
-  badge: {
-    fontSize: '10px',
-    fontWeight: 700,
-    padding: '2px 6px',
-    borderRadius: '4px',
-    letterSpacing: '0.05em',
+  title: {
+    fontSize: '11px',
+    color: '#475569',
+    fontWeight: 500,
   },
-  finalBadge: {
-    fontSize: '9px',
+  clearBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#6366f1',
+    fontSize: '11px',
     fontWeight: 600,
-    padding: '2px 5px',
-    borderRadius: '3px',
-    background: '#15803d',
-    color: '#86efac',
-    letterSpacing: '0.05em',
+    cursor: 'pointer',
+    padding: 0,
+  },
+  list: {
+    flex: 1,
+    overflowY: 'auto',
+    padding: '4px 0 8px',
+  },
+  placeholder: {
+    margin: 0,
+    padding: '16px 12px',
+    fontSize: '12px',
+    color: '#334155',
+    fontStyle: 'italic',
+  },
+  row: {
+    display: 'flex',
+    gap: '12px',
+    padding: '5px 12px',
+    alignItems: 'flex-start',
+    transition: 'opacity 0.2s',
+  },
+  ts: {
+    fontSize: '11px',
+    color: '#334155',
+    fontFamily: 'monospace',
+    fontVariantNumeric: 'tabular-nums',
+    flexShrink: 0,
+    paddingTop: '2px',
   },
   text: {
-    margin: 0,
     fontSize: '13px',
     lineHeight: 1.5,
-    color: '#e2e8f0',
+    color: '#94a3b8',
+    flex: 1,
+    wordBreak: 'break-word',
+  },
+  textHighlight: {
+    color: '#818cf8',
+    fontWeight: 500,
+  },
+  textPartial: {
+    color: '#475569',
   },
 }
