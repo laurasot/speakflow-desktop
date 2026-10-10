@@ -13,7 +13,9 @@ export function setupDisplayMediaHandler(): void {
   session.defaultSession.setDisplayMediaRequestHandler(
     async (_request, callback) => {
       try {
+        const t0 = Date.now()
         const sources = await desktopCapturer.getSources({ types: ['screen'] })
+        logger.info('[perf] desktopCapturer.getSources', { ms: Date.now() - t0, count: sources.length })
 
         if (sources.length === 0) {
           logger.warn('No screen sources found for display media handler')

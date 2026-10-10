@@ -7,13 +7,13 @@ export class StaticCredentialsProvider implements CredentialsProvider {
   }
 
   getAuthHeaders(): Record<string, string> | undefined {
-    const userId = this.getUserId()
-    if (!userId) return undefined
-    return { 'X-User-Id': userId }
+    const apiKey = getSettings().apiKey.trim()
+    if (!apiKey) return undefined
+    return { Authorization: `Bearer ${apiKey}` }
   }
 
   isConfigured(): boolean {
-    const { userId, backendUrl } = getSettings()
-    return userId.trim().length > 0 && backendUrl.trim().length > 0
+    const { userId, backendUrl, apiKey } = getSettings()
+    return userId.trim().length > 0 && backendUrl.trim().length > 0 && apiKey.trim().length > 0
   }
 }

@@ -82,7 +82,9 @@ export class AudioWebSocketClient extends EventEmitter {
     }
 
     if (this.ws === null || this.ws.readyState !== WebSocket.OPEN) {
-      this.connect()
+      // A pending reconnect timer owns the retry schedule; connecting here
+      // would bypass the backoff on every incoming chunk.
+      if (!this.reconnectTimer) this.connect()
     } else {
       this.drain()
     }

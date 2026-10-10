@@ -21,7 +21,6 @@ export class JwtCredentialsProvider implements CredentialsProvider {
     const userId = this.userIdAccessor()
     if (!token && !userId) return undefined
     const headers: Record<string, string> = {}
-    if (userId) headers['X-User-Id'] = userId
     if (token) headers['Authorization'] = `Bearer ${token}`
     return headers
   }

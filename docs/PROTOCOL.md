@@ -28,7 +28,7 @@ Protocolo binario: **JSON metadata + audio PCM binario** (sin base64).
 |-----------------|----------|-------------|
 | `type`          | string   | `"start_session"` |
 | `session_id`    | string   | UUID de la sesión |
-| `user_id`       | string   | ID del usuario (mismo que header `X-User-Id`) |
+| `user_id`       | string   | ID del usuario (debe coincidir con el usuario de la API key) |
 | `sources`       | string[] | Lista de fuentes: `["microphone", "system"]` |
 | `audio_config`  | object   | Configuración de audio |
 | ↳ `sample_rate` | number   | 16000 |
@@ -203,15 +203,13 @@ El backend puede enviar mensajes JSON en cualquier momento:
 
 ## Headers WebSocket (handshake HTTP)
 
-| Header       | Valor                     | Descripción |
-|--------------|---------------------------|-------------|
-| `X-User-Id`  | e.g., `"user123"`         | User ID del cliente (v1 sin JWT) |
+| Header          | Valor                  | Descripción |
+|-----------------|------------------------|-------------|
+| `Authorization` | `Bearer <api-key>`     | API key personal del usuario. El servidor deriva la identidad de esta credencial. Sin ella (o inválida) cierra con código `1008`. |
 
-**Futuro (v2):**
+`X-User-Id` ya no autentica: el servidor lo ignora. El `user_id` de `start_session` debe coincidir con el usuario de la API key o el servidor responde `error` con código `user_mismatch`.
 
-| Header          | Valor                     |
-|-----------------|---------------------------|
-| `Authorization` | `Bearer <jwt-token>`      |
+**Futuro:** un token JWT del proveedor de identidad viajará en el mismo header `Authorization`.
 
 ---
 

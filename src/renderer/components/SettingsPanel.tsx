@@ -13,6 +13,7 @@ export function SettingsPanel({ onSaved }: Props) {
 
   const [userId, setUserId] = useState(settings?.userId ?? '')
   const [backendUrl, setBackendUrl] = useState(settings?.backendUrl ?? '')
+  const [apiKey, setApiKey] = useState(settings?.apiKey ?? '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -23,7 +24,11 @@ export function SettingsPanel({ onSaved }: Props) {
     setErr(null)
     setSaved(false)
     try {
-      const updated = await saveSettings({ userId: userId.trim(), backendUrl: backendUrl.trim() })
+      const updated = await saveSettings({
+        userId: userId.trim(),
+        backendUrl: backendUrl.trim(),
+        apiKey: apiKey.trim(),
+      })
       setSettings(updated as Settings)
       setSaved(true)
       setTimeout(() => { setSaved(false); onSaved?.() }, 1200)
@@ -57,6 +62,18 @@ export function SettingsPanel({ onSaved }: Props) {
             value={backendUrl}
             onChange={(e) => setBackendUrl(e.target.value)}
             placeholder="wss://your-backend.example.com/ws/audio"
+            autoComplete="off"
+          />
+        </div>
+
+        <div style={s.field}>
+          <label style={s.label}>API Key</label>
+          <input
+            style={s.input}
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder="Your personal API key"
             autoComplete="off"
           />
         </div>
