@@ -23,8 +23,20 @@ export function createMainWindow(): BrowserWindow {
     },
   })
 
+  const createdAt = Date.now()
+
   win.on('ready-to-show', () => {
     win.show()
+    logger.info('[perf] ready-to-show', { sinceCreateMs: Date.now() - createdAt })
+  })
+
+  win.webContents.on('did-finish-load', () => {
+    logger.info('[perf] did-finish-load', { sinceCreateMs: Date.now() - createdAt })
+  })
+
+  // Forward renderer "[perf]" probes to main.log
+  win.webContents.on('console-message', (_e, _level, message) => {
+    if (message.startsWith('[perf]')) logger.info(message)
   })
 
   // Open external links in the OS browser, not in Electron

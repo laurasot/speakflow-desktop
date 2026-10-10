@@ -2,6 +2,7 @@ import type { AudioSource, AudioChunkIpc } from '@shared/types'
 import { getMicrophoneStream } from './micCapture'
 import { getSystemAudioStream } from './systemCapture'
 import { createPcmCapture, type PcmWorkletHandle } from './pcmWorklet'
+import { timed } from '../lib/perf'
 
 export type LevelCallback = (source: AudioSource, rmsLevel: number) => void
 
@@ -70,8 +71,8 @@ export class CaptureSession {
     onFrame: (pcm: ArrayBuffer, timestamp: number) => void
   ): Promise<void> {
     try {
-      this.micStream = await getMicrophoneStream(this.micDeviceId)
-      const { handle } = await createPcmCapture(this.micStream, onFrame)
+      this.micStream = await timed('mic getUserMedia', () => getMicrophoneStream(this.micDeviceId))
+      const { handle } = await timed('mic createPcmCapture', () => createPcmCapture(this.micStream!, onFrame))
       this.micHandle = handle
     } catch (err) {
       this.running = false
@@ -83,8 +84,8 @@ export class CaptureSession {
     onFrame: (pcm: ArrayBuffer, timestamp: number) => void
   ): Promise<void> {
     try {
-      this.sysStream = await getSystemAudioStream()
-      const { handle } = await createPcmCapture(this.sysStream, onFrame)
+      this.sysStream = await timed('system getDisplayMedia', () => getSystemAudioStream())
+      const { handle } = await timed('system createPcmCapture', () => createPcmCapture(this.sysStream!, onFrame))
       this.sysHandle = handle
     } catch (err) {
       // System audio is best-effort — log and continue with mic only

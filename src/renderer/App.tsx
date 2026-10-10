@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useCaptureStore } from './store/captureStore'
 import { getSettings, onStatusUpdate, onServerMessage } from './lib/ipc'
 import { listAudioInputDevices } from './audio/micCapture'
+import { mark, timed } from './lib/perf'
 import { SettingsPanel } from './components/SettingsPanel'
 import { TranscriptPanel } from './components/TranscriptPanel'
 import { SuggestionPanel } from './components/SuggestionPanel'
@@ -34,9 +35,11 @@ export function App() {
   const [initialized, setInitialized] = useState(false)
 
   useEffect(() => {
-    getSettings().then((s) => {
+    mark('App mounted')
+    timed('getSettings (IPC)', () => getSettings()).then((s) => {
       setSettings(s as Settings)
       setInitialized(true)
+      mark('UI initialized')
     })
     const unsubStatus = onStatusUpdate(applyStatusUpdate)
     const unsubMessages = onServerMessage(handleServerMessage)
@@ -47,7 +50,9 @@ export function App() {
   }, [setSettings, applyStatusUpdate, handleServerMessage])
 
   useEffect(() => {
-    listAudioInputDevices().then(setAvailableDevices).catch(console.warn)
+    timed('listAudioInputDevices (probe getUserMedia)', () => listAudioInputDevices())
+      .then(setAvailableDevices)
+      .catch(console.warn)
   }, [setAvailableDevices])
 
   if (!initialized) {
@@ -58,7 +63,9 @@ export function App() {
     )
   }
 
-  const isConfigured = Boolean(settings?.userId?.trim() && settings?.backendUrl?.trim())
+  const isConfigured = Boolean(
+    settings?.userId?.trim() && settings?.backendUrl?.trim() && settings?.apiKey?.trim()
+  )
 
   if (view === 'settings') {
     return (

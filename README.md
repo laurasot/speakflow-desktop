@@ -92,7 +92,8 @@ The Electron window will open with DevTools.
 
 1. Click **⚙ Settings**
 2. Enter:
-   - **User ID:** your identifier
+   - **User ID:** your identifier (must match the user your API key belongs to)
+   - **API Key:** your personal API key, sent as `Authorization: Bearer`
    - **Backend WebSocket URL:** `ws://localhost:8000/ws/audio` (or your backend)
 3. **Save**
 

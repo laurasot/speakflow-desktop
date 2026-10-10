@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useCaptureStore } from '../store/captureStore'
 import type { SuggestionMessage } from '@shared/types'
 
@@ -32,27 +33,48 @@ export function SuggestionPanel() {
 }
 
 function SuggestionCard({ item }: { item: SuggestionMessage }) {
+  const [copied, setCopied] = useState(false)
+  const [hover, setHover] = useState(false)
+
   async function handleUse() {
     try {
       await navigator.clipboard.writeText(item.suggestion)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
     } catch {
       // Clipboard may be unavailable in some Electron contexts
     }
   }
 
-  const title = item.based_on
-    ? `Based on: "${item.based_on}"`
-    : undefined
+  const cardStyle = {
+    ...styles.card,
+    ...(hover && styles.cardHover),
+    ...(copied && styles.cardCopied),
+  }
 
   return (
     <button
       type="button"
-      style={styles.card}
+      style={cardStyle}
       onClick={handleUse}
-      title={title}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
     >
-      <span style={styles.cardText}>{item.suggestion}</span>
-      <span style={styles.chevron}>›</span>
+      <div style={styles.cardContent}>
+        {item.based_on && (
+          <span style={styles.basedOn}>
+            En respuesta a: "{item.based_on}"
+          </span>
+        )}
+        <span style={styles.cardText}>{item.suggestion}</span>
+      </div>
+      <div style={styles.actionIcon}>
+        {copied ? (
+          <span style={styles.copiedIcon}>✓ Copiado</span>
+        ) : (
+          <span style={styles.copyIcon}>📋</span>
+        )}
+      </div>
     </button>
   )
 }
@@ -104,7 +126,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   card: {
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: '10px',
     width: '100%',
     padding: '10px 12px',
@@ -113,19 +135,51 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '10px',
     cursor: 'pointer',
     textAlign: 'left',
-    transition: 'border-color 0.15s, background 0.15s',
+    transition: 'all 0.2s ease',
+  },
+  cardHover: {
+    background: '#1a1f2e',
+    borderColor: '#334155',
+    transform: 'translateY(-1px)',
+  },
+  cardCopied: {
+    borderColor: '#22c55e',
+    background: '#1a2e1a',
+  },
+  cardContent: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '6px',
+  },
+  basedOn: {
+    fontSize: '11px',
+    color: '#64748b',
+    fontStyle: 'italic',
+    lineHeight: 1.35,
+    borderLeft: '2px solid #334155',
+    paddingLeft: '8px',
   },
   cardText: {
-    flex: 1,
     fontSize: '13px',
     lineHeight: 1.45,
     color: '#e2e8f0',
-    wordBreak: 'break-word',
+    wordBreak: 'break-word' as const,
   },
-  chevron: {
+  actionIcon: {
     flexShrink: 0,
-    fontSize: '18px',
-    color: '#475569',
-    lineHeight: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: '60px',
+  },
+  copyIcon: {
+    fontSize: '16px',
+    opacity: 0.6,
+  },
+  copiedIcon: {
+    fontSize: '11px',
+    color: '#22c55e',
+    fontWeight: 600,
   },
 }

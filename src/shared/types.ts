@@ -96,6 +96,7 @@ export type ServerMessage =
 export interface Settings {
   userId: string
   backendUrl: string
+  apiKey: string
   chunkMs: typeof CHUNK_MS
   sampleRate: typeof SAMPLE_RATE
   channels: typeof CHANNELS
